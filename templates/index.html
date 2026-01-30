@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Modbus Control Panel</title>
+   <base href="/scsep/"> 
+    
+   <!--<link rel="stylesheet" href="static/style.css"> -->
+   <!--<script src="static/script.js" defer></script> -->
+   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+   <div id="auth-modal">
+      <div class="auth-card">
+         <div style="font-size: 3rem; margin-bottom: 10px;">🔒</div>
+         <h2>Acesso Restrito</h2>
+         <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 20px;">Digite o código para gerenciar o sistema</p>
+
+         <input type="password" id="access-code-input" placeholder="••••" maxlength="4" autofocus>
+
+         <button onclick="checkAuth()">Entrar no Painel</button>
+         <p id="auth-error" style="color: #ef4444; font-size: 0.8rem; margin-top: 15px; display: none;">Código
+            incorreto!</p>
+      </div>
+   </div>
+
+   <div class="container" id="main-container">
+      <div class="card">
+         <h2>Digital Outputs (Coils)</h2>
+         <div class="coil-grid">
+            {% for i in range(40) %}
+            <div class="coil-item">
+               <span class="coil-index">#{{ i }}</span>
+               <label class="switch">
+                  <input type="checkbox" id="coil_{{ i }}" onchange="updateCoil({{ i }}, this.checked)">
+                  <span class="slider"></span>
+               </label>
+            </div>
+            {% endfor %}
+         </div>
+      </div>
+
+      <div class="card">
+         <h2>Holding Registers (Analog Data)</h2>
+         <table>
+            <thead>
+               <tr>
+                  <th>REGISTER</th>
+                  <th>VARIABLE</th>
+                  <th>VALUE</th>
+               </tr>
+            </thead>
+            <tbody id="register-list"></tbody>
+         </table>
+      </div>
+   </div>
+
+   <script>
+      const CORRECT_CODE = "{{ access_code }}";
+      const REGISTER_NAMES = {{ register_names| tojson }};
+   </script>
+   <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Monitoramento em Tempo Real</title>
+   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+   <style>
+      /* Estilo específico para os indicadores tipo LED */
+      /* Estilo base da bolinha (apagada) */
+      .indicator {
+         width: 16px;
+         height: 16px;
+         border-radius: 50%;
+         background-color: #475569;
+         /* Cinza escuro/apagado */
+         border: 2px solid #1e293b;
+         transition: all 0.2s ease;
+         display: inline-block;
+      }
+
+      /* Estado ativo (aceso em verde) */
+      .indicator.active {
+         background-color: #22c55e;
+         /* Verde brilhante */
+         border-color: #15803d;
+         box-shadow: 0 0 12px #22c55e, inset 0 0 4px #ffffff;
+      }
+
+      .coil-item-view {
+         display: flex;
+         flex-direction: column;
+         align-items: center;
+         padding: 10px;
+         background: #f8fafc;
+         border-radius: 8px;
+         border: 1px solid #e2e8f0;
+      }
+   </style>
+</head>
+
+<body>
+   <div class="container" style="display: block;">
+      <header style="text-align: center; margin-bottom: 30px;">
+         <h1 style="color: #1e293b;">Painel de Monitoramento - 1</h1>
+         <p style="color: #64748b;">Supervisão e Controle de Sistemas Elétricos de Potência
+         </p>
+      </header>
+
+      <div class="card">
+         <h2>Status dos Atuadores (Coils)</h2>
+         <div class="coil-grid">
+            {% for i in range(40) %}
+            <div class="coil-item" style="display: flex; flex-direction: column; align-items: center;">
+               <span class="coil-index">#{{ i }}</span>
+               <div id="led_{{ i }}" class="indicator"></div>
+               <span style="font-size: 0.7rem; margin-top: 5px;">C{{ i }}</span>
+            </div>
+            {% endfor %}
+         </div>
+      </div>
+
+      <div class="card">
+         <h2>Holding Registers (Entradas Analógicas)</h2>
+         <table>
+            <thead>
+               <tr>
+                  <th>REGISTRO</th>
+                  <th>VARIÁVEL</th>
+                  <th>VALOR ATUAL</th>
+               </tr>
+            </thead>
+            <tbody id="register-list-view"></tbody>
+         </table>
+      </div>
+   </div>
+
+   <script>
+      // Recebe os nomes das variáveis definidos no Python (app.py)
+      const REGISTER_NAMES = {{ register_names | tojson }};
+
+      function updateMonitor() {
+         fetch('get_system_data')
+            .then(res => {
+               if (!res.ok) throw new Error("Erro na rede");
+               return res.json();
+            })
+            .then(data => {
+               // 1. ATUALIZAÇÃO DOS COILS (INDICADORES LED)
+               if (data.coils) {
+                  data.coils.forEach((val, index) => {
+                     const led = document.getElementById('led_' + index);
+                     if (led) {
+                        // Se o valor for 1 ou true, adiciona a classe CSS 'active'
+                        if (val === 1 || val === true) {
+                           led.classList.add('active');
+                        } else {
+                           led.classList.remove('active');
+                        }
+                     }
+                  });
+               }
+
+               // 2. ATUALIZAÇÃO DOS REGISTRADORES (TABELA)
+               const regTable = document.getElementById('register-list-view');
+               if (regTable && data.registers) {
+                  let html = '';
+                  data.registers.forEach((val, i) => {
+                     html += `<tr>
+                                <td style="color:#94a3b8">4000${i + 1}</td>
+                                <td class="reg-label">${REGISTER_NAMES[i] || 'Variável ' + i}</td>
+                                <td class="reg-value">${val}</td>
+                            </tr>`;
+                  });
+                  regTable.innerHTML = html;
+               }
+            })
+            .catch(err => {
+               console.error("Erro ao buscar dados do servidor:", err);
+            });
+      }
+
+      // Inicia o ciclo de atualização
+      setInterval(updateMonitor, 1000);
+
+      // Primeira execução imediata ao carregar a página
+      updateMonitor();
+   </script>
+</body>
+
+</html>
